@@ -1,0 +1,344 @@
+(sgp :mp 5)
+
+(add-dm
+ (strategy1 isa strategy type coop)
+ (strategy2 isa strategy type agg)
+ 
+ 
+ (claim1 isa move type claim strategy coop mns nil bid-diff nil op-move nil my-move 0)
+ (bid1 isa move type bid strategy coop mns nil bid-diff 3 op-move -2 my-move -2)
+ (bid2 isa move type bid strategy coop mns nil bid-diff 2 op-move -2 my-move -2)
+ (bid3 isa move type bid strategy coop mns nil bid-diff 2 op-move -1 my-move -1)
+ (bid4 isa move type bid strategy coop mns nil bid-diff 1 op-move -1 my-move -1)
+ (bid5 isa move type bid strategy coop mns nil bid-diff 3 op-move 0 my-move -1)
+ (bid6 isa move type bid strategy coop mns nil bid-diff 1 op-move 0 my-move 0)
+ (decision1 isa move type decision strategy coop mns nil bid-diff 1 op-move -1 my-move reject)
+ (decision2 isa move type decision strategy coop mns nil bid-diff 2 op-move -1 my-move accept)
+ (opening1 isa move type opening strategy coop mns 1 bid-diff nil op-move 6 my-move 5)
+ (opening2 isa move type opening strategy coop mns 4 bid-diff nil op-move 6 my-move 6)
+ (opening3 isa move type opening strategy coop mns 1 bid-diff nil op-move 5 my-move 5)
+ (opening4 isa move type opening strategy coop mns 4 bid-diff nil op-move 8 my-move 7)
+ (claim2 isa move type claim strategy agg mns nil bid-diff nil op-move nil my-move 1)
+ (bid7 isa move type bid strategy agg mns nil bid-diff 3 op-move 1 my-move 0)
+ (bid8 isa move type bid strategy agg mns nil bid-diff 2 op-move 1 my-move 0)
+ (decision3 isa move type decision strategy agg mns nil bid-diff 1 op-move -1 my-move reject)
+ (decision4 isa move type decision strategy agg mns nil bid-diff 2 op-move -1 my-move accept)
+ (final-offer1 isa move type bid strategy agg mns nil bid-diff 2 op-move 0 my-move 0)
+ (final-offer2 isa move type bid strategy agg mns nil bid-diff 3 op-move 0 my-move -1)
+ (opening5 isa move type opening strategy agg mns 1 bid-diff nil op-move 8 my-move 9)
+ (opening6 isa move type opening strategy agg mns 4 bid-diff nil op-move 6 my-move 7)
+ (opening7 isa move type opening strategy agg mns 1 bid-diff nil op-move 7 my-move 8)
+ (opening8 isa move type opening strategy agg mns 4 bid-diff nil op-move 7 my-move 8)
+ (quit1 isa move type quit strategy agg mns nil bid-diff 2 op-move 1 my-move quit)
+ (bid9 isa move type bid strategy neutral mns nil bid-diff 2 op-move -2 my-move -1)
+ (bid10 isa move type bid strategy neutral mns nil bid-diff 3 op-move -1 my-move -1)
+ (bid11 isa move type bid strategy neutral mns nil bid-diff 1 op-move -1 my-move 0)
+ (bid12 isa move type bid strategy neutral mns nil bid-diff 3 op-move 0 my-move 0)
+ (bid13 isa move type bid strategy neutral mns nil bid-diff 2 op-move 0 my-move 0)
+ (final-offer3 isa move type bid strategy neutral mns nil bid-diff 1 op-move 0 my-move 0)
+ (final-offer4 isa move type bid strategy neutral mns nil bid-diff 2 op-move 0 my-move -1)
+ (decision5 isa move type decision strategy neutral mns nil bid-diff 1 op-move -1 my-move accept)
+ (decision6 isa move type decision strategy neutral mns nil bid-diff 0 op-move -1 my-move reject)
+ (opening9 isa move type opening strategy neutral mns 3 bid-diff nil op-move 7 my-move 7)
+ (quit2 isa move type quit strategy neutral mns 1 bid-diff 0 op-move 0 my-move quit)
+ (goal isa goal state start strategy coop)
+ (reject) (accept) (quit) (coop) (agg) (neutral) (bid) (decision) (opening) (claim))
+ 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; report mns value to model and start claim round
+ (p start-game
+   =goal>
+      isa         goal
+      state       start
+      strategy    =s
+   =action>
+    isa        game-state
+    my-mns    =m-mns
+==>
+   =goal>
+    state       claim
+    my-mns    =m-mns
+   +partial>
+    isa        move
+    type        claim
+    strategy   =s
+   -action>
+)
+
+; note: partial matching allowed for claims (no claim for neutral but that can change)
+; declare mns
+(p make-claim
+   =goal>
+    isa        goal
+    state      claim
+   =partial>
+    isa        move
+    type        claim
+    my-move    =move
+    strategy     =s
+==>
+   =goal>
+    state        bid
+   +action>
+    isa        game-state
+    type-move    claim
+    my-move    =move
+    strategy    =s
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; depending on game stage, retrieve an action (opening, bid, final-offer, quit, decision)
+(p start-opening
+   =goal>
+    isa        goal
+    state        bid
+    strategy    =s
+    my-mns    =m-mns
+   =action>
+    isa        game-state
+    state        game
+    my-bid-diff    nil
+    op-move    =o-move
+==>
+   +partial>
+    isa        move
+    type        opening
+    strategy    =s
+    mns        =m-mns
+    op-move    =o-move
+   -action>
+)
+
+(p start-bid
+   =goal>
+    isa        goal
+    state        bid
+    strategy    =s
+    my-mns      =mns
+   =action>
+    isa          game-state
+    state        game
+    my-bid-diff  =m-diff
+    op-move      =o-move
+    op-final     no
+==>
+   +partial>
+    isa        move
+    strategy    =s
+    type        bid
+    bid-diff    =m-diff
+    op-move    =o-move
+   -action>
+)
+
+(p start-decision
+  =goal>
+    isa        goal
+    state        bid
+    strategy    =s
+    my-mns      =mns
+   =action>
+    isa        game-state
+    state        game
+    my-bid-diff    =m-diff
+    op-move     =o-move
+    op-final    yes
+==>
+   +partial>
+    isa        move
+    strategy    =s
+    type        decision
+    bid-diff    =m-diff
+    op-move    =o-move
+   -action>
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; report move to ModelView
+(p make-move
+   =goal>
+    isa        goal
+    state        bid
+   =partial>
+    isa        move
+    type        =t
+    strategy   =s
+    my-move    =m-move
+==>
+   +action>
+    isa        game-state
+    type        =t
+    my-move    =m-move
+    strategy   =s
+   =goal>
+    state        find-strategy
+   =partial>
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; identify strategy of oponent by pretending that model is oponent
+(p get-op-strategy
+  =goal>
+    isa         goal
+    state       find-strategy
+  =action>
+    isa         game-state
+    state       game
+    op-mns      =o-mns
+    op-bid-diff =o-bid-diff
+    op-move     =o-move
+    my-move     =m-move
+==>
+   +partial>
+    isa        move
+    mns        =o-mns
+    bid-diff    =o-bid-diff
+    op-move     =m-move
+    my-move     =o-move
+   =action>
+   =goal>
+    isa         goal
+    state       retrieve-op-strategy
+)
+
+; update strategy of model based on proposed strategy of player (simplified version for now)
+(p retrieve-op-strategy-agg
+   =goal>
+    isa        goal
+    state      retrieve-op-strategy
+   =partial>
+    isa        move
+    strategy   agg
+   ?imaginal>
+    state        free
+==>
+   +imaginal>
+    isa        strategy
+    type       agg
+   =goal>
+    isa        goal
+    state        retrieve-my-strategy
+)
+
+
+(p retrieve-op-strategy-coop
+   =goal>
+    isa        goal
+    state      retrieve-op-strategy
+   =partial>
+    isa        move
+    strategy   coop
+   ?imaginal>
+    state        free
+==>
+   +imaginal>
+    isa        strategy
+    type       coop
+   =goal>
+    isa        goal
+    state        retrieve-my-strategy
+)
+
+(p retrieve-op-strategy-neutral
+   =goal>
+    isa        goal
+    state      retrieve-op-strategy
+   =partial>
+    isa        move
+    strategy   neutral
+==>
+   =goal>
+    isa        goal
+    state      bid
+   -action>
+)
+
+(p retrieve-my-strategy
+   =goal>
+    isa        goal
+    state        retrieve-my-strategy
+   ?imaginal>
+    state        free
+==>
+   +retrieval>
+    isa        strategy
+   =goal>
+    isa        goal
+    state        update-my-strategy
+)
+
+(p update-my-strategy
+   =goal>
+    isa        goal
+    state        update-my-strategy
+   =retrieval>
+    isa        strategy
+    type        =s
+==>
+   =goal>
+    strategy     =s
+    state        bid
+   -action>
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ModelView reports good moves back to model at the end of the negotiation
+; take info from action buffer and create chunk in imaginal buffer of desired format
+(p process-good-game
+   =goal>
+    isa         goal
+   =action>
+    isa        game-state
+    state        feedback
+    type-move    =t
+    strategy    =s
+    mns         =mns
+    bid-diff    =bid-diff
+    op-move    =o-move
+    my-move    =m-move
+   ?imaginal>
+    state free
+==>
+   +imaginal>
+    isa        move
+    type        =t
+    strategy    =s
+    mns        =mns
+    bid-diff    =bid-diff
+    op-move    =o-move
+    my-move    =m-move
+  =goal>
+    isa         goal
+    state       start
+  -action>
+)
+
+(p reset-game
+   =goal>
+    isa         goal
+   =action>
+    isa        game-state
+    state        reset
+==>
+  =goal>
+    isa         goal
+    state       start
+  -action>
+    
+)
+
+; every time there is a chunk in the imaginal buffer (namely after feedback was provided)
+; clear the chunk such that it enters declarative memory
+(p clear-new-imaginal-chunk
+   =goal>
+    state   start
+   ?imaginal>
+    state        free
+    buffer    full
+==>
+   -imaginal>)
+
+   
+(set-all-baselevels -1000 100000)
+(goal-focus goal)
+
